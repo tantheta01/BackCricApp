@@ -88,3 +88,71 @@ exports.score_card = function(req, res) {
 
     // client.query()
 }
+
+exports.score_comparison = function(req, res) {
+    var match_id = req.params.id;
+    var q1 = `select db1.runs + db1.ex_runs from (select sum(runs_scored) over (order by over_id, ball_id) as runs, sum(extra_runs) over (order by over_id, ball_id) as ex_runs from ball_by_ball where match_id = ${match_id} and innings_no=1) as db1`;
+    var q2 = `select db1.runs + db1.ex_runs from (select sum(runs_scored) over (order by over_id, ball_id) as runs, sum(extra_runs) over (order by over_id, ball_id) as ex_runs from ball_by_ball where match_id = ${match_id} and innings_no=2) as db1`;
+    client.query(q1, (err1, res1) => {
+        if(err1){
+            console.log(JSON.stringify(err1));
+        }
+        else{
+            // console.log(JSON.stringify(res1));
+            client.query(q2, (err2, res2) => {
+                if(err2){
+                    console.log(JSON.stringify(err2));
+                    console.log(JSON.stringify(res2));
+                }
+            });
+            console.log(JSON.stringify(res1));
+        }
+    });
+}
+
+exports.summary = function(req, res){
+    var match_id = req.match_id;
+    q1 = `select * from (select sum(runs_scored) as runs, striker as player_id, count(*) as num_balls from ball_by_ball where match_id = ${match_id} and innings_no=1 group by  striker) as db1 order by db1.runs desc, db1.num_balls asc, db1.player_id asc limit 3`;
+
+    q2 = `select * from (select sum(runs_scored) as runs, striker as player_id, count(*) as num_balls from ball_by_ball where match_id = ${match_id} and innings_no=1 group by  striker) as db1 order by db1.runs desc, db1.num_balls asc, db1.player_id asc limit 3`;
+
+    q3 = `select db1.nwickets as nwickets, db1.bowler, db2.tot_runs from (select count(*) as nwickets, bowler from ball_by_ball where match_id = ${match_id} and innings_no=1 and (out_type = 'bowled' or out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'lbw' or out_type = 'stumped' or out_type = 'keeper catch') group by bowler) as db1 inner join (select sum(runs_scored) + sum(extra_runs) as tot_runs, bowler from ball_by_ball where match_id = ${match_id} and innings_no=1 group by bowler) as db2 on db1.bowler = db2.bowler order by db1.nwickets desc, db2.tot_runs asc, db1.bowler asc limit 3`;
+
+    q4 = `select db1.nwickets as nwickets, db1.bowler, db2.tot_runs from (select count(*) as nwickets, bowler from ball_by_ball where match_id = ${match_id} and innings_no=2 and (out_type = 'bowled' or out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'lbw' or out_type = 'stumped' or out_type = 'keeper catch') group by bowler) as db1 inner join (select sum(runs_scored) + sum(extra_runs) as tot_runs, bowler from ball_by_ball where match_id = ${match_id} and innings_no=2 group by bowler) as db2 on db1.bowler = db2.bowler order by db1.nwickets desc, db2.tot_runs asc, db1.bowler asc limit 3`;
+
+    client.query(q1, (err1, runs1) => {
+        if(err1){
+            console.log(err1);
+        }
+        else{
+            client.query(q2, (err2, runs2) => {
+                if(err2){
+                    console.log(err2);
+                }
+                else{
+                    client.query(q3, (err3, wick1) => {
+                        if(err3){
+                            console.log(JSON.stringify(err3));
+                        }
+                        else{
+                            client.query(q4, (err4, wick2) => {
+                                if(err4){
+                                    console.log(err4);
+                                }
+                                else{
+                                    console.log("Completed All queries");
+                                    console.log(JSON.stringify(runs1));
+                                    console.log(JSON.stringify(runs2));
+                                    console.log(JSON.stringify(wick1));
+                                    console.log(JSON.stringify(wick2));
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+}
+
+

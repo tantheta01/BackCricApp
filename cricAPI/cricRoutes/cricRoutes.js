@@ -5,4 +5,5 @@ module.exports = function(app) {
 
     app.route('/matches').get(controls.list_matches);
     app.route('/matches/:id').get(controls.score_card);
+    app.route('/matches/:id/comparison').get(controls.score_comparison);
 }
