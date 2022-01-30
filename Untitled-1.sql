@@ -14,3 +14,23 @@ select db1.nwickets as nwickets, db1.bowler, db2.tot_runs from (select count(*) 
 
 
 select * from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id inner join player_match on player_match.player_id = ball_by_ball and player_match.player_id = ball_by_ball.striker where match.season_year = ${year}
+
+-- net run rate
+select tab1.t1, tab1.db1RR+tab2.db2RR-tab3.db3RR-tab4.db4RR as nrr from (select db.t1 as t1, sum(db.rr) as db1RR from (select match.match_id as matchID, match.team1 as t1, match.team2 as t2, sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs) as tot_runs, count(*) as nballs, (sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs))*6.0 / count(*) as rr from ball_by_ball inner join match on ball_by_ball.match_id = match.match_id inner join player_match on ball_by_ball.striker = player_match.player_id and match.match_id = player_match.match_id and match.team1 = player_match.team_id group by match.match_id , match.team1, match.team2) as db group by db.t1) as tab1
+full outer join
+(select db.t1 as t1, sum(db.rr) as db2RR from (select match.match_id as matchID, match.team2 as t1, match.team1 as t2, sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs) as tot_runs, count(*) as nballs, (sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs))*6.0 / count(*) as rr from ball_by_ball inner join match on ball_by_ball.match_id = match.match_id inner join player_match on ball_by_ball.striker = player_match.player_id and match.match_id = player_match.match_id and match.team2 = player_match.team_id group by match.match_id , match.team1, match.team2) as db group by db.t1) as tab2
+on tab1.t1 = tab2.t1
+full outer join 
+(select db.t2 as t2, sum(db.rr) as db3RR from (select match.match_id as matchID, match.team1 as t1, match.team2 as t2, sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs) as tot_runs, count(*) as nballs, (sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs))*6.0 / count(*) as rr from ball_by_ball inner join match on ball_by_ball.match_id = match.match_id inner join player_match on ball_by_ball.striker = player_match.player_id and match.match_id = player_match.match_id and match.team1 = player_match.team_id group by match.match_id , match.team1, match.team2) as db group by db.t2) as tab3
+on tab2.t1 = tab3.t2
+full outer join
+(select db.t2 as t2, sum(db.rr) as db4RR from (select match.match_id as matchID, match.team2 as t1, match.team1 as t2, sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs) as tot_runs, count(*) as nballs, (sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs))*6.0 / count(*) as rr from ball_by_ball inner join match on ball_by_ball.match_id = match.match_id inner join player_match on ball_by_ball.striker = player_match.player_id and match.match_id = player_match.match_id and match.team2 = player_match.team_id group by match.match_id , match.team1, match.team2) as db group by db.t2) as tab4
+on tab3.t2 = tab4.t2;
+
+
+
+
+
+
+select match.match_id as matchID, match.team2 as t2, sum(ball_by_ball.runs_scored) + sum(ball_by_ball.extra_runs) as tot_runs, count(*) as nballs from ball_by_ball inner join match on ball_by_ball.match_id = match.match_id inner join player_match on ball_by_ball.striker = player_match.player_id and match.match_id = player_match.match_id and match.team1 = player_match.team_id group by match.match_id , match.team1
+
