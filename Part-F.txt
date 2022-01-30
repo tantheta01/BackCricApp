@@ -1,0 +1,6 @@
+create sequence auto_increment;
+alter table venue alter column venue_id set default nextval('auto_increment');
+select setval('auto_increment',16);
+
+make a form: Venue Name, City Name, Country Name, Capacity
+insert into venue (venue_name,city_name,country_name,capacity) values (...);
