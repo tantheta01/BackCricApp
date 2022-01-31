@@ -17,7 +17,7 @@ exports.list_matches = function(req, res) {
     console.log("inside matches");
     if(req.query.skip){
         var st = `select * from (select row_number() over () as rn, * from match ORDER BY season_year) as db1 where db1.rn <= 10 and db1.rn >= 0`
-        client.query(st,(err, res) => {
+        client.query(st,(err, task) => {
             if(err){
 
                 console.log("an error took place in fetching all matches");
@@ -27,7 +27,8 @@ exports.list_matches = function(req, res) {
                 console.log(req.query.skip);
                 console.log(req.query.limit);
                 console.log("executing stiff currectly");
-                console.log(JSON.stringify(res));
+                console.log(JSON.stringify(task));
+                res.json(task);
             }
         });
     }
@@ -155,4 +156,11 @@ exports.summary = function(req, res){
     });
 }
 
+
+exports.points_table = function(req, res) {
+    var year = req.params.year;
+    
+
+
+}
 
