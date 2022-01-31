@@ -1,0 +1,89 @@
+Section-a:
+
+select player_name,country_name,batting_hand,bowling_skill from player where player_id = player_id;
+
+1.Player Name 
+
+2.Country
+
+3.Batting Style 
+
+4.Bowling Skill
+
+Section-b:
+
+1.Matches : No of matches a player has played
+
+select count(*) from player_match where player_id = player_id;
+
+2.Runs : Total runs scored by player
+
+select sum(runs_scored) from ball_by_ball where striker = player_id;
+
+3.Four : No of Runs Scored in 4
+
+select 4*count(*) as runs_fours from ball_by_ball where runs_scored = 4 and striker = player_id;
+
+4.Six : No of Runs Scored in 6
+
+select 6*count(*) as runs_fours from ball_by_ball where runs_scored = 6 and striker = player_id;
+
+5.Fifty: No of fifty Scored
+
+select count(*) from (select sum(runs_scored),match_id from ball_by_ball where striker = player_id group by match_id) as foo where sum >= 50;
+
+6.HS : Highest Score
+
+select max(sum) from (select sum(runs_scored),match_id from ball_by_ball where striker = player_id group by match_id) as foo;
+
+7.Strike Rate : average number of runs scored per 100 balls faced. 
+
+select 1.0*sum(runs_scored)*100.0/count(*) as strike_rate from ball_by_ball where striker = player_id;
+
+8.Average : The total number of runs they have scored divided by the number of times they have been out
+
+select 1.0*sum(runs_scored)/sum(case when out_type != 'NULL' then 1 else 0 end) as average from ball_by_ball where striker = player_id;
+
+For graph:::::
+select sum(runs_scored),match_id from ball_by_ball where striker = player_id group by match_id;
+X-axis: match_id Y-axis: runs scored
+Choose different color for runs < 20, >= 30 and <=50 and > 50
+
+Section-c:
+
+Matches : Number of matches a player has bowled in.
+
+select count(*) from (select count(*) from ball_by_ball where bowler = player_id group by match_id) as foo;
+
+Runs : Runs Conceded by the bowler
+
+select sum(runs_scored)+sum(extra_runs) as runs_conceded from ball_by_ball where bowler = player_id;
+
+Balls  : Total number of balls  bowled
+
+select count(*) as num_balls from ball_by_ball where bowler = player_id;
+
+Overs : Total number of overs bowled
+
+select count(*) from (select count(*) from ball_by_ball where bowler = player_id group by over_id,match_id) as foo;
+
+Wickets : Total wickets taken by the bowler
+
+select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts from ball_by_ball where bowler = player_id;
+
+Economy : The average number of runs conceded per over (Econ = Runs/Overs bowled).
+
+select 1.0*foo2.runs_conceded/count(foo1) as economy from (select count(*) from ball_by_ball where bowler = player_id group by over_id,match_id) as foo1,(select sum(runs_scored)+sum(extra_runs) as runs_conceded from ball_by_ball where bowler = player_id) as foo2 group by foo2.runs_conceded;
+
+Five Wickets : The number of times in which the bowler took at least five wickets
+
+select count(*) from (select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts from ball_by_ball where bowler = player_id group by match_id) as foo where numwkts >= 5;
+
+
+For graph::::::
+select sum(runs_scored)+sum(extra_runs) as runs_conceded,match_id from ball_by_ball where bowler = player_id group by match_id;
+select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts,match_id from ball_by_ball where bowler = player_id group by match_id;
+X-axis: match_id
+Y-axis 
+Line graph : wickets taken in given match
+Bar graph : Runs Conceded in given match
