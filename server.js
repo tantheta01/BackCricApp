@@ -1,8 +1,11 @@
 var express = require('express'),
+// const cors = require('cors'),
   app = express(),
+  // app.use(cors())
   port = process.env.PORT || 3000,
   bodyParser = require('body-parser');
-
+const cors = require('cors');
+app.use(cors());
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -12,4 +15,4 @@ routes(app);
 
 app.listen(port);
 
-console.log('todo list RESTful API server started on: ' + port);
+console.log('vigna u returning on 5th or 6th?' + port);
