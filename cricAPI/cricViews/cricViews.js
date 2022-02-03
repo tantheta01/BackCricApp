@@ -384,4 +384,44 @@ exports.player_info = function(req,res) {
     });
 }
 
+exports.list_years = function(req,res) {
+    var q = `select distinct season_year from match`;
+    client.query(q, (err,years) => {
+        if(err){
+            console.log(JSON.stringify(err));
+        }
+        else{
+            res.json(years);
+        }
+    });
+}
 
+exports.points_table = function(req,res) {
+    //do here
+}
+
+exports.list_venues = function (req,res) {
+    var q = `select venue_name,venue_id from venue`;
+    client.query(q, (err,years) => {
+        if(err){
+            console.log(JSON.stringify(err));
+        }
+        else{
+            res.json(venues);
+        }
+    });
+}
+
+exports.venue_stats = function (req,res) {
+    var venue_id = req.params.id;
+    //basic info
+    var q1 = `select * from venue where venue_id = ${venue_id}`;
+    var q2 = `select count(*) from match where match.venue_id = ${venue_id}`;
+    var q3 = `select max(db1.tot_runs), min(db1.tot_runs) from (select match.match_id as match_id, sum(runs_scored) + sum(extra_runs) as tot_runs from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id inner join venue on venue.venue_id = match.venue_id where ball_by_ball.innings_no = 1 and venue.venue_id = ${venue_id} group by match.match_id) as db1`;
+    var q4 = `select max(db1.runs) from (select sum(runs_scored) + sum(extra_runs) as runs from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = ball_by_ball.striker and player_match.team_id != match.match_winner where ball_by_ball.innings_no = 1 and match_winner is not null and venue.venue_id = ${venue_id} group by match.match_id) as db1`;
+    var q5 = `select count(*) from (select count(*) from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = striker and player_match.team_id = match.match_winner where ball_by_ball.innings_no = 1 and venue.venue_id = ${venue_id} group by match.match_id) as db1`;
+    var q6 = `select count(*) from (select count(*) from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = striker and player_match.team_id = match.match_winner where ball_by_ball.innings_no = 2 and venue.venue_id = ${venue_id} group by match.match_id) as db1`;
+    var q7 = `select count(*) from (select count(*) from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = striker and match.match_winner is null where ball_by_ball.innings_no = 1 and venue.venue_id = ${venue_id} group by match.match_id) as db1`;
+    var q8 = `select AVG(db1.runs), db1.season_year from (select sum(runs_scored) + sum(extra_runs) as runs, match.season_year as season_year from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = ball_by_ball.striker where ball_by_ball.innings_no = 1 and venue.venue_id = ${venue_id} group by match.match_id, match.season_year) as db1 group by db1.season_year`;
+    
+}
