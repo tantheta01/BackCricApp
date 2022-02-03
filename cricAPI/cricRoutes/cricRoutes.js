@@ -7,5 +7,6 @@ module.exports = function(app) {
     app.route('/matches/:id/comparison').get(controls.score_comparison);
     app.route('/matches/:id/summary').get(controls.summary);
     app.route('/matches/:id').get(controls.score_card);
+    app.route('/player/:id').get(controls.player_stats);
     
 }

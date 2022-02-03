@@ -181,3 +181,96 @@ exports.points_table = function(req, res) {
 
 }
 
+exports.player_stats = function(req, res) {
+    var player_id = req.params.id;
+
+
+    var bar_chart_query = `select runs, match.match_id, season_year from (select sum(runs_scored) as runs, match_id from ball_by_ball where ball_by_ball.striker = ${player_id} group by match_id) as db1 inner join match on match.match_id = db1.match_id`;
+
+    var details_query = `select * from player where player_id = ${player_id}`;
+
+    var matches_query = `select distinct match_id from ball_by_ball where striker = ${player_id}`;
+
+    var runs_and_strikerate = `select sum(runs_scored) as tot_runs, count(*) as n_balls, round(sum(runs_scored) * 100.0 / count(*), 2) as strike_rate from ball_by_ball where striker = ${player_id}`;
+
+    var nfours = `select count(*) as nfours from ball_by_ball where striker = ${player_id} and runs_scored = 4`;
+    var nsixes = `select count(*) as nfours from ball_by_ball where striker = ${player_id} and runs_scored = 6`;
+
+    var nfifty = `select count(*) as nfifty from (select sum(runs_scored) as tot_runs from ball_by_ball where striker = ${player_id} group by match_id) as db2 where db2.tot_runs >= 50`;
+
+    var highscore = `select max(tot_runs) as highscore from (select sum(runs_scored) as tot_runs from ball_by_ball where striker = ${player_id} group by match_id) as db2`;
+
+    var nwickets = `select count(*) as nwickets from ball_by_ball where striker = ${player_id} and out_type is not null`;
+    var R = {};
+    client.query(bar_chart_query, (err, bar_chart_result) => {
+        if(err){
+            console.log("bar chart error came");
+            return err;
+        }
+        R["bar_chart"] = bar_chart_result["rows"];
+        client.query(details_query, (err, detail_response) => {
+            if(err) {
+                console.log("error in details query");
+                return err;
+            }
+            R["details"] = detail_response["rows"][0]
+            
+            client.query(matches_query, (err, matches_response) => {
+                if(err){
+                    console.log("error in matches query");
+                    return err;
+                }
+                R["n_matches"] = matches_response["rows"].length;
+
+                client.query(runs_and_strikerate, (err, runs_and_sr_response) => {
+                    if(err){
+                        console.log("error in runs and strikerate");
+                        return err;
+                    }
+                    R["total_runs"] = runs_and_sr_response["rows"][0]["tot_runs"];
+                    R["sr"] = runs_and_sr_response["rows"][0]["strike_rate"];
+
+                    client.query(nfours, (err, fours_response) => {
+                        if(err){
+                            console.log("number of fours error");
+                            return err;
+                        }
+                        R["nfours"] = fours_response["rows"][0]["nfours"];
+
+                        client.query(nsixes, (err, sixes_response) => {
+                            R["nsixes"] = sixes_response["rows"][0]["nsixes"];
+
+                            client.query(nfifty, (err, fifty_res) => {
+                                if(err){
+                                    console.log("fifty_error");
+                                    return err;
+                                }
+                                R["nfifty"] = fifty_res["rows"][0]["nfifty"];
+
+                                client.query(highscore, (err, highscore_res) => {
+                                    if(err){
+                                        console.log("error in highscore");
+                                        return err;
+                                    }
+                                    R["highscore"] = highscore_res["rows"][0]["highscore"];
+
+                                    client.query(nwickets, (err, nwickets_res) => {
+                                        if(err){
+                                            console.log("Error in nwickets");
+                                            return err;
+                                        }
+                                        R["nwickets"] = nwickets_res["rows"][0]["nwickets"];
+                                        R["average"] = R["total_runs"] / R["nwickets"];
+                                        res.json(R);
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+}
+
+
