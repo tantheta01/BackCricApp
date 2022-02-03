@@ -423,5 +423,65 @@ exports.venue_stats = function (req,res) {
     var q6 = `select count(*) from (select count(*) from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = striker and player_match.team_id = match.match_winner where ball_by_ball.innings_no = 2 and venue.venue_id = ${venue_id} group by match.match_id) as db1`;
     var q7 = `select count(*) from (select count(*) from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = striker and match.match_winner is null where ball_by_ball.innings_no = 1 and venue.venue_id = ${venue_id} group by match.match_id) as db1`;
     var q8 = `select AVG(db1.runs), db1.season_year from (select sum(runs_scored) + sum(extra_runs) as runs, match.season_year as season_year from match inner join venue on venue.venue_id = match.venue_id inner join ball_by_ball on ball_by_ball.match_id = match.match_id inner join player_match on player_match.match_id = match.match_id and player_match.player_id = ball_by_ball.striker where ball_by_ball.innings_no = 1 and venue.venue_id = ${venue_id} group by match.match_id, match.season_year) as db1 group by db1.season_year`;
-    
+
+    client.query(q1, (err1, res1) => {
+        if(err1){
+            console.log(JSON.stringify(err1));
+        }
+        else{
+            client.query(q2, (err2, res2) => {
+                if(err2){
+                    console.log(JSON.stringify(err2));
+                }
+                else{
+                    client.query(q3, (err3, res3) => {
+                        if(err3){
+                            console.log(JSON.stringify(err3));
+                        }
+                        else{
+                            client.query(q4, (err4, res4) => {
+                                if(err4){
+                                    console.log(JSON.stringify(err4));
+
+                                }
+                                else{
+                                    client.query(q5,(err5, res5) => {
+                                        if(err5){
+                                            console.log(JSON.stringify(err5));
+                                        }
+                                        else{
+                                            client.query(q6,(err6, res6) => {
+                                                if(err6){
+                                                    console.log(JSON.stringify(err6));
+                                                }
+                                                else{
+                                                    client.query(q7,(err7, res7) => {
+                                                        if(err7){
+                                                            console.log(JSON.stringify(err7));
+                                                        }
+                                                        else{
+                                                            client.query(q8,(err8, res8) => {
+                                                                if(err8){
+                                                                    console.log(JSON.stringify(err8));
+                                                                }
+                                                                else{
+                                                                    res.json({'details' : res1, 'matches' : res2, 'minmax' : res3, 'highest_chase' : res4, 'first_bat' : res5, 'first_bowl' : res6, 'draw' : res7, 'average_score' : res8});
+                                                                }
+                                                            });
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
 }
+
+
