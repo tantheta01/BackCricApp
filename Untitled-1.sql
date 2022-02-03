@@ -82,3 +82,21 @@ select player.player_id, player.player_name, db11.nwickets, db11.tot_runs from (
 
 
 select runs, match.match_id, season_year from (select sum(runs_scored) as runs, match_id from ball_by_ball where ball_by_ball.striker = 20 group by match_id) as db1 inner join match on match.match_id = db1.match_id;
+
+--details
+select * from player where player_id = ${player_id};
+-- nmatches
+select distinct match_id from ball_by_ball where striker = ${player_id}
+-- total runs and strikerate
+select sum(runs_scored) as tot_runs, count(*) as n_balls, round(sum(runs_scored) * 100.0 / count(*), 2) as strike_rate from ball_by_ball where striker = ${player_id}
+
+select count(*) as nfours from ball_by_ball where striker = ${player_id} and runs_scored = 4;
+
+select count(*) as nfours from ball_by_ball where striker = ${player_id} and runs_scored = 4;
+
+select count(*) as nfifty from (select sum(runs_scored) as tot_runs from ball_by_ball where striker = ${player_id} group by match_id) as db2 where db2.tot_runs >= 50;
+
+select max(tot_runs) as highscore from (select sum(runs_scored) as tot_runs from ball_by_ball where striker = ${player_id} group by match_id) as db2
+
+select count(*) as nwickets from ball_by_ball where striker = ${player_id} and out_type is not null;
+
