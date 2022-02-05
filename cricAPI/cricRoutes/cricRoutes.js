@@ -12,5 +12,5 @@ module.exports = function(app) {
     app.route('/pointstable/:year').get(controls.points_table)
     app.route('/venues').get(controls.list_venues)
     app.route('/venues/:id').get(controls.venue_stats)
-    app.route('/addvenue').get(controls.add_venue)
+    // app.route('/addvenue').get(controls.add_venue)
 }

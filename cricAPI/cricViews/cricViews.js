@@ -35,6 +35,8 @@ exports.list_matches = function(req, res) {
     
 };
 
+
+
 exports.match_desc = function(req, res) {
 
     //scorecard, comparison and summary
@@ -213,7 +215,9 @@ exports.match_desc = function(req, res) {
 // }
 
 exports.list_players = function(req,res) {
-    var q = `select player_id,player_name from player`;
+    var limit = req.query.limit;
+    var skip = req.query.skip;
+    var q = `select * from (select row_number() over() as rn player_id, player_name, country_name from player) as db1 where rn>=${skip} and rn<=${limit}`;
     client.query(q, (err,players) => {
         if(err){
             console.log(JSON.stringify(err));
@@ -236,7 +240,7 @@ exports.player_info = function(req,res) {
     var q7 = `select max(sum) from (select sum(runs_scored),match_id from ball_by_ball where striker = ${player_id} group by match_id) as foo`;
     var q8 = `select 1.0*sum(runs_scored)*100.0/count(*) as strike_rate from ball_by_ball where striker = ${player_id}`;
     var q9 = `select 1.0*sum(runs_scored)/sum(case when out_type != 'NULL' then 1 else 0 end) as average from ball_by_ball where striker = ${player_id}`;
-    var q10 = `select sum(runs_scored),match_id from ball_by_ball where striker = ${player_id} group by match_id`;
+    var q10 = `select sum(runs_scored),match.match_id, season_year from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id where striker = ${player_id} group by match.match_id order by season_year, match.match_id`;
     var q11 = `select count(*) from (select count(*) from ball_by_ball where bowler = ${player_id} group by match_id) as foo`;
     var q12 = `select sum(runs_scored)+sum(extra_runs) as runs_conceded from ball_by_ball where bowler = ${player_id}`;
     var q13 = `select count(*) as num_balls from ball_by_ball where bowler = ${player_id}`;
@@ -246,6 +250,7 @@ exports.player_info = function(req,res) {
     var q17 = `select count(*) from (select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts from ball_by_ball where bowler = ${player_id} group by match_id) as foo where numwkts >= 5`;
     var q18 = `select sum(runs_scored)+sum(extra_runs) as runs_conceded,match_id from ball_by_ball where bowler = ${player_id} group by match_id`;
     var q19 = `select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts,match_id from ball_by_ball where bowler = ${player_id} group by match_id`;
+    var ntimes_out = `select match_id from ball_by_ball where out_type is not null and striker = ${player_id} group by match_id`;
 
     client.query(q1, (err1,res1) => {
         if(err1){
@@ -343,7 +348,15 @@ exports.player_info = function(req,res) {
                                                                                                                                                             console.log(JSON.stringify(err19));
                                                                                                                                                         }
                                                                                                                                                         else{
-                                                                                                                                                            res.json({'details' : res1, 'total_matches' : res2, 'runs_scored' : res3, 'four_runs' : res4, 'six_runs' : res5, 'fifties' : res6, 'highest_score' : res7, 'strike_rate' : res8, 'average' : res9, 'score_graph' : res10, 'matches_bowled' : res11, 'runs_conceded' : res12, 'numballs' : res13, 'numovers' : res14, 'numwkts' : res15, 'economy' : res16, 'five_wickets' : res17, 'conceded_graph' : res18, 'wickets_graph' : res19});
+                                                                                                                                                            client.query(ntimes_out, (err20, ntimes_res) => {
+                                                                                                                                                                if(err20){
+                                                                                                                                                                    console.log(JSON.stringify(err20));
+                                                                                                                                                                }
+                                                                                                                                                                else{
+                                                                                                                                                                    res.json({'details' : res1['rows'], 'total_matches' : res2['rows'], 'runs_scored' : res3['rows'], 'four_runs' : res4['rows'], 'six_runs' : res5['rows'], 'fifties' : res6['rows'], 'highest_score' : res7['rows'], 'strike_rate' : res8['rows'], 'average' : res9['rows'], 'score_graph' : res10['rows'], 'matches_bowled' : res11['rows'], 'runs_conceded' : res12['rows'], 'numballs' : res13['rows'], 'numovers' : res14['rows'], 'numwkts' : res15['rows'], 'economy' : res16['rows'], 'five_wickets' : res17['rows'], 'conceded_graph' : res18['rows'], 'wickets_graph' : res19['rows'], 'out_mids' : ntimes_res['rows']});
+                                                                                                                                                                }
+                                                                                                                                                            });
+                                                                                                                                                            
                                                                                                                                                         }
                                                                                                                                                     });
                                                                                                                                                 }
