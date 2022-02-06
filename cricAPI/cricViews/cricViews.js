@@ -52,6 +52,8 @@ exports.match_desc = function(req, res) {
     // for score comparison
     var q5 = `select db1.runs + db1.ex_runs from (select sum(runs_scored) over (order by over_id, ball_id) as runs, sum(extra_runs) over (order by over_id, ball_id) as ex_runs from ball_by_ball where match_id = ${match_id} and innings_no=1) as db1`;
     var q6 = `select db1.runs + db1.ex_runs from (select sum(runs_scored) over (order by over_id, ball_id) as runs, sum(extra_runs) over (order by over_id, ball_id) as ex_runs from ball_by_ball where match_id = ${match_id} and innings_no=2) as db1`;
+    var q5_ = `select rn from (select row_number() over() as rn, * from ball_by_ball where innings_no=1 and match_id=${match_id}) as db1 where out_type is not null`;
+    var q6_ = `select rn from (select row_number() over() as rn, * from ball_by_ball where innings_no=2 and match_id=${match_id}) as db1 where out_type is not null`;
 
     //match summary
     //have to add number of overs also in match summary
@@ -87,7 +89,6 @@ exports.match_desc = function(req, res) {
                                 }
                                 else{
                                     console.log("heyyy")
-                                    //res.json({'first_bat' : res1, 'second_bat' : res2, 'first_bowl' : res3, 'second_bowl' : res4});
                                     client.query(q5,(err5,runs1) => {
                                         if(err5){
                                             console.log(JSON.stringify(err5));
@@ -118,7 +119,22 @@ exports.match_desc = function(req, res) {
                                                                                     console.log(JSON.stringify(err10));
                                                                                 }
                                                                                 else{
-                                                                                    res.json({'first_bat' : first_bat, 'second_bat' : second_bat, 'first_bowl' : first_bowl, 'second_bowl' : second_bowl, 'runs1' : runs1, 'runs2' : runs2, 'batsmen1' : batsmen1, 'batsmen2' : batsmen2, 'bowler1' : bowler1, 'bowler2' : bowler2});
+                                                                                    client.query(q5_, (err5_, wickets1) => {
+                                                                                        if(err5_){
+                                                                                            console.log(JSON.stringify(err5_));
+                                                                                        }
+                                                                                        else{
+                                                                                            client.query(q6_, (err6_, wickets2) => {
+                                                                                                if(err6_){
+                                                                                                    console.log(JSON.stringify(err6_));
+                                                                                                }
+                                                                                                else{
+                                                                                                    res.json({'first_bat' : first_bat, 'second_bat' : second_bat, 'first_bowl' : first_bowl, 'second_bowl' : second_bowl, 'runs1' : runs1, 'runs2' : runs2, 'batsmen1' : batsmen1, 'batsmen2' : batsmen2, 'bowler1' : bowler1, 'bowler2' : bowler2, 'wickets1' : wickets1, 'wickets2' : wickets2});
+                                                                                                }
+                                                                                            })
+                                                                                        }
+                                                                                    })
+                                                                                    
                                                                                 }
                                                                             });
                                                                         }
@@ -217,7 +233,7 @@ exports.match_desc = function(req, res) {
 exports.list_players = function(req,res) {
     var limit = req.query.limit;
     var skip = req.query.skip;
-    var q = `select * from (select row_number() over() as rn player_id, player_name, country_name from player) as db1 where rn>=${skip} and rn<=${limit}`;
+    var q = `select * from (select row_number() over() as rn, player_id, player_name, country_name from player) as db1 where rn>=${skip} and rn<=${limit}`;
     client.query(q, (err,players) => {
         if(err){
             console.log(JSON.stringify(err));
@@ -233,22 +249,22 @@ exports.player_info = function(req,res) {
     var player_id = req.params.id;
     var q1 = `select player_name,country_name,batting_hand,bowling_skill from player where player_id = ${player_id}`;
     var q2 = `select count(*) from player_match where player_id = ${player_id}`;
-    var q3 = `select sum(runs_scored) from ball_by_ball where striker = ${player_id}`;
+    var q3 = `select COALESCE(sum(runs_scored), 0) from ball_by_ball where striker = ${player_id}`;
     var q4 = `select 4*count(*) as runs_fours from ball_by_ball where runs_scored = 4 and striker = ${player_id}`;
     var q5 = `select 6*count(*) as runs_fours from ball_by_ball where runs_scored = 6 and striker = ${player_id}`;
     var q6 = `select count(*) from (select sum(runs_scored),match_id from ball_by_ball where striker = ${player_id} group by match_id) as foo where sum >= 50`;
-    var q7 = `select max(sum) from (select sum(runs_scored),match_id from ball_by_ball where striker = ${player_id} group by match_id) as foo`;
-    var q8 = `select 1.0*sum(runs_scored)*100.0/count(*) as strike_rate from ball_by_ball where striker = ${player_id}`;
-    var q9 = `select 1.0*sum(runs_scored)/sum(case when out_type != 'NULL' then 1 else 0 end) as average from ball_by_ball where striker = ${player_id}`;
+    var q7 = `select COALESCE(max(sum),0) from (select sum(runs_scored),match_id from ball_by_ball where striker = ${player_id} group by match_id) as foo`;
+    var q8 = `select COALESCE(1.0*sum(runs_scored)*100.0/count(*), 0) as strike_rate from ball_by_ball where striker = ${player_id}`;
+    var q9 = `select 1.0*sum(runs_scored)/GREATEST(sum(case when out_type != 'NULL' then 1 else 0 end), 1) as average from ball_by_ball where striker = ${player_id}`;
     var q10 = `select sum(runs_scored),match.match_id, season_year from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id where striker = ${player_id} group by match.match_id order by season_year, match.match_id`;
     var q11 = `select count(*) from (select count(*) from ball_by_ball where bowler = ${player_id} group by match_id) as foo`;
-    var q12 = `select sum(runs_scored)+sum(extra_runs) as runs_conceded from ball_by_ball where bowler = ${player_id}`;
+    var q12 = `select COALESCE(sum(runs_scored)+sum(extra_runs), 0) as runs_conceded from ball_by_ball where bowler = ${player_id}`;
     var q13 = `select count(*) as num_balls from ball_by_ball where bowler = ${player_id}`;
     var q14 = `select count(*) from (select count(*) from ball_by_ball where bowler = ${player_id} group by over_id,match_id) as foo`;
-    var q15 = `select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts from ball_by_ball where bowler = ${player_id}`;
-    var q16 = `select 1.0*foo2.runs_conceded/count(foo1) as economy from (select count(*) from ball_by_ball where bowler = ${player_id} group by over_id,match_id) as foo1,(select sum(runs_scored)+sum(extra_runs) as runs_conceded from ball_by_ball where bowler = ${player_id}) as foo2 group by foo2.runs_conceded`;
+    var q15 = `select COALESCE(sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end), 0) as numwkts from ball_by_ball where bowler = ${player_id}`;
+    var q16 = `select COALESCE(1.0*foo2.runs_conceded/count(foo1)) as economy from (select count(*) from ball_by_ball where bowler = ${player_id} group by over_id,match_id) as foo1,(select sum(runs_scored)+sum(extra_runs) as runs_conceded from ball_by_ball where bowler = ${player_id}) as foo2 group by foo2.runs_conceded`;
     var q17 = `select count(*) from (select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts from ball_by_ball where bowler = ${player_id} group by match_id) as foo where numwkts >= 5`;
-    var q18 = `select sum(runs_scored)+sum(extra_runs) as runs_conceded,match_id from ball_by_ball where bowler = ${player_id} group by match_id`;
+    var q18 = `select sum(runs_scored)+sum(extra_runs) as runs_conceded,match.match_id as match_id, season_year from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id where bowler = ${player_id} group by match.match_id, match.season_year order by season_year, match.match_id`;
     var q19 = `select sum(case when (out_type = 'caught' or out_type = 'caught and bowled' or out_type = 'bowled' or out_type = 'stumped' or out_type = 'keeper catch' or out_type = 'lbw' or out_type = 'hit wicket') then 1 else 0 end) as numwkts,match_id from ball_by_ball where bowler = ${player_id} group by match_id`;
     var ntimes_out = `select match_id from ball_by_ball where out_type is not null and striker = ${player_id} group by match_id`;
 
@@ -273,6 +289,7 @@ exports.player_info = function(req,res) {
                                     console.log(JSON.stringify(err4));
                                 }
                                 else{
+                                    // console.log("iske baad");
                                     client.query(q5, (err5, res5) => {
                                         if(err5){
                                             console.log(JSON.stringify(err5));
@@ -283,21 +300,27 @@ exports.player_info = function(req,res) {
                                                     console.log(JSON.stringify(err6));
                                                 }
                                                 else{
+                                                    console.log("iske baad");
+
                                                     client.query(q7, (err7,res7) => {
                                                         if(err7){
                                                             console.log(JSON.stringify(err7));
                                                         }
                                                         else{
+                                                            
+
                                                             client.query(q8, (err8,res8) => {
                                                                 if(err8){
                                                                     console.log(JSON.stringify(err8));
                                                                 }
                                                                 else{
+                                                                    console.log("iske baad999");
                                                                     client.query(q9, (err9,res9) => {
                                                                         if(err9){
                                                                             console.log(JSON.stringify(err9));
                                                                         }
                                                                         else{
+                                                                            console.log("iske baad455");
                                                                             client.query(q10, (err10,res10) => {
                                                                                 if(err10){
                                                                                     console.log(JSON.stringify(err10));
@@ -308,6 +331,7 @@ exports.player_info = function(req,res) {
                                                                                             console.log(JSON.stringify(err11));
                                                                                         }
                                                                                         else{
+                                                                                            console.log("iske baad q11");
                                                                                             client.query(q12, (err12,res12) => {
                                                                                                 if(err12){
                                                                                                     console.log(JSON.stringify(err12));
@@ -338,6 +362,7 @@ exports.player_info = function(req,res) {
                                                                                                                                             console.log(JSON.stringify(err17));
                                                                                                                                         }
                                                                                                                                         else{
+                                                                                                                                            console.log("iske baad q17");
                                                                                                                                             client.query(q18, (err18,res18) => {
                                                                                                                                                 if(err18){
                                                                                                                                                     console.log(JSON.stringify(err18));
@@ -353,6 +378,7 @@ exports.player_info = function(req,res) {
                                                                                                                                                                     console.log(JSON.stringify(err20));
                                                                                                                                                                 }
                                                                                                                                                                 else{
+                                                                                                                                                                    console.log(JSON.stringify(ntimes_res));
                                                                                                                                                                     res.json({'details' : res1['rows'], 'total_matches' : res2['rows'], 'runs_scored' : res3['rows'], 'four_runs' : res4['rows'], 'six_runs' : res5['rows'], 'fifties' : res6['rows'], 'highest_score' : res7['rows'], 'strike_rate' : res8['rows'], 'average' : res9['rows'], 'score_graph' : res10['rows'], 'matches_bowled' : res11['rows'], 'runs_conceded' : res12['rows'], 'numballs' : res13['rows'], 'numovers' : res14['rows'], 'numwkts' : res15['rows'], 'economy' : res16['rows'], 'five_wickets' : res17['rows'], 'conceded_graph' : res18['rows'], 'wickets_graph' : res19['rows'], 'out_mids' : ntimes_res['rows']});
                                                                                                                                                                 }
                                                                                                                                                             });
