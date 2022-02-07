@@ -133,5 +133,6 @@ on teamid = team1) as fulldb on team_id = teamid;
 
 select db1.team1 as team1, w1+w2 as w from (select team1, 2*count(*) as w1 from match where match.season_year = ${season_year} group by team1) as db1 inner join (select team2, 2*count(*) as w2 from match where match.season_year = ${season_year} group by team2) as db2 on team1 = team2;
 
+insert into venue (venue_name,city_name,country_name,capacity) values (V11,City1,Lodu,9000)
 
 

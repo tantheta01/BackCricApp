@@ -609,4 +609,25 @@ exports.venue_stats = function (req,res) {
     });
 }
 
+exports.add_venue = function(req,res) {
+
+    var venue_name = req.query.venue_name;
+    var city = req.query.city_name;
+    var country = req.query.country_name;
+    var capacity = req.query.capacity;
+    // console.log(JSON.stringify(req.query));
+    console.log(JSON.stringify(req.query.venue_name));
+    
+    var q = `insert into venue (venue_name,city_name,country_name,capacity) values (${venue_name},${city},${country},${capacity})`;
+    client.query(q, (err,res1) => {
+        if(err){
+            console.log(JSON.stringify(err));
+        }
+        else{
+            console.log("All good!");
+            res.json(res1);
+        }
+    });
+}
+
 
