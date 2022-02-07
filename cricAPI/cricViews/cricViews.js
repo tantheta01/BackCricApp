@@ -7,7 +7,7 @@ const client = new Client({
     user : 'postgres',
     host : 'localhost',
     database : 'lab2db',
-    password : 'newpassword',
+    password : 'newpass',
     port: 5432
 })
 
@@ -605,6 +605,23 @@ exports.venue_stats = function (req,res) {
                     });
                 }
             });
+        }
+    });
+}
+
+exports.add_venue = function(req,res) {
+
+    var venue_name = req.params.venue_name;
+    var city = req.params.city_name;
+    var country = req.params.country_name;
+    var capacity = req.params.capacity;
+    var q = `insert into venue (venue_name,city_name,country_name,capacity) values (${venue_name},${city},${country},${capacity})`;
+    client.query(q, (err,res) => {
+        if(err){
+            console.log(JSON.stringify(err));
+        }
+        else{
+            console.log("All good!");
         }
     });
 }
