@@ -7,7 +7,7 @@ const client = new Client({
     user : 'postgres',
     host : 'localhost',
     database : 'lab2db',
-    password : 'newpassword',
+    password : 'newpass',
     port: 5432
 })
 
@@ -618,7 +618,7 @@ exports.add_venue = function(req,res) {
     // console.log(JSON.stringify(req.query));
     console.log(JSON.stringify(req.query.venue_name));
     
-    var q = `insert into venue (venue_name,city_name,country_name,capacity) values (${venue_name},${city},${country},${capacity})`;
+    var q = `insert into venue (venue_name,city_name,country_name,capacity) values ('${venue_name}','${city}','${country}',${capacity})`;
     client.query(q, (err,res1) => {
         if(err){
             console.log(JSON.stringify(err));
