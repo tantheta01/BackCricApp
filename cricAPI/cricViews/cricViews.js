@@ -497,7 +497,7 @@ exports.list_years = function(req,res) {
             console.log(JSON.stringify(err));
         }
         else{
-            res.json(years);
+            res.json({'years' : years['rows']});
         }
     });
 }
