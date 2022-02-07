@@ -100,3 +100,22 @@ select max(tot_runs) as highscore from (select sum(runs_scored) as tot_runs from
 
 select count(*) as nwickets from ball_by_ball where striker = ${player_id} and out_type is not null;
 
+select match_id from ball_by_ball where out_type is not null and striker = ${player_id} group by match_id;
+
+select 1.0*sum(runs_scored)/GREATEST(sum(case when out_type != 'NULL' then 1 else 0 end), 1) as average from ball_by_ball where striker = 15;
+
+select sum(case when out_type != 'NULL' then 1 else 0 end) as n_outs from ball_by_ball where striker = 15
+
+select 1*sum(runs_scored) as tot_runs from ball_by_ball where striker = 15
+
+(select max(n_outs, 1) as mnouts from (select sum(case when out_type != 'NULL' then 1 else 0 end) as n_outs from ball_by_ball where striker = 15) as db1) 
+
+select max(n_outs, 1) as mnouts from (select sum(case when out_type != 'NULL' then 1 else 0 end) as n_outs from ball_by_ball where striker = 15) as db1;
+
+select rn from (select row_number() over() as rn, * from ball_by_ball where innings_no=1 and match_id=501203) as db1 where out_type is not null;
+
+select team1, team2, team1_name, team_name as team2_name from (select team1, team2, team_name as team1_name from (select team1, team2 from match where match_id=${match_id}) as db1 inner join team on team_id = team1) as db2 inner join team on team2 = team_id;
+
+select runs_scored, count(*) * runs_scored as tot_runs from ball_by_ball where match_id = 501208 and innings_no = 1 group by runs_scored;
+
+select sum(extra_runs) as sum_ex from ball_by_ball where match_id = ${match_id} and innings_no=1
