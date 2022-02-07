@@ -13,5 +13,6 @@ module.exports = function(app) {
     app.route('/venues').get(controls.list_venues)
     app.route('/venues/:id').get(controls.venue_stats)
     
+    
     // app.route('/addvenue').get(controls.add_venue)
 }
