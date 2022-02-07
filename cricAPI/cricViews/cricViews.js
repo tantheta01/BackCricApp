@@ -52,8 +52,17 @@ exports.match_desc = function(req, res) {
     // for score comparison
     var q5 = `select db1.runs + db1.ex_runs from (select sum(runs_scored) over (order by over_id, ball_id) as runs, sum(extra_runs) over (order by over_id, ball_id) as ex_runs from ball_by_ball where match_id = ${match_id} and innings_no=1) as db1`;
     var q6 = `select db1.runs + db1.ex_runs from (select sum(runs_scored) over (order by over_id, ball_id) as runs, sum(extra_runs) over (order by over_id, ball_id) as ex_runs from ball_by_ball where match_id = ${match_id} and innings_no=2) as db1`;
-    var q5_ = `select rn from (select row_number() over() as rn, * from ball_by_ball where innings_no=1 and match_id=${match_id}) as db1 where out_type is not null`;
-    var q6_ = `select rn from (select row_number() over() as rn, * from ball_by_ball where innings_no=2 and match_id=${match_id}) as db1 where out_type is not null`;
+    var q5_ = `select over_id from (select row_number() over() as rn, * from ball_by_ball where innings_no=1 and match_id=${match_id}) as db1 where out_type is not null`;
+    var q6_ = `select over_id from (select row_number() over() as rn, * from ball_by_ball where innings_no=2 and match_id=${match_id}) as db1 where out_type is not null`;
+
+    // adding team 1 vs team 2
+    var qA = `select team1, team2, team1_name, team_name as team2_name, season_year from (select team1, team2, team_name as team1_name, season_year from (select team1, team2, season_year from match where match_id=${match_id}) as db1 inner join team on team_id = team1) as db2 inner join team on team2 = team_id`;
+
+    // pie chart
+    var qB1 = `select runs_scored, count(*) * runs_scored as tot_runs from ball_by_ball where match_id = ${match_id} and innings_no = 1 group by runs_scored`;
+    var qB2 = `select runs_scored, count(*) * runs_scored as tot_runs from ball_by_ball where match_id = ${match_id} and innings_no = 2 group by runs_scored`;
+    var qC1 = `select sum(extra_runs) as sum_ex from ball_by_ball where match_id = ${match_id} and innings_no=1`;
+    var qC2 = `select sum(extra_runs) as sum_ex from ball_by_ball where match_id = ${match_id} and innings_no=2`;
 
     //match summary
     //have to add number of overs also in match summary
@@ -129,7 +138,35 @@ exports.match_desc = function(req, res) {
                                                                                                     console.log(JSON.stringify(err6_));
                                                                                                 }
                                                                                                 else{
-                                                                                                    res.json({'first_bat' : first_bat, 'second_bat' : second_bat, 'first_bowl' : first_bowl, 'second_bowl' : second_bowl, 'runs1' : runs1, 'runs2' : runs2, 'batsmen1' : batsmen1, 'batsmen2' : batsmen2, 'bowler1' : bowler1, 'bowler2' : bowler2, 'wickets1' : wickets1, 'wickets2' : wickets2});
+                                                                                                    client.query(qA, (errA, resA) => {
+                                                                                                        if(errA){
+                                                                                                            console.log(JSON.stringify(errA));
+                                                                                                        }
+                                                                                                        else{
+                                                                                                            client.query(qB1, (errB1, resB1) => {
+                                                                                                                if(errB1){
+                                                                                                                    console.log(JSON.stringify(errB1));
+                                                                                                                }
+                                                                                                                else{
+                                                                                                                    client.query(qB2, (errB2, resB2) => {
+                                                                                                                        if(resB2){
+                                                                                                                            client.query(qC1, (errC1, resC1) => {
+                                                                                                                                if(resC1){
+                                                                                                                                    client.query(qC2, (errC2, resC2) => {
+                                                                                                                                        if(resC2){
+                                                                                                                                            res.json({'first_bat' : first_bat, 'second_bat' : second_bat, 'first_bowl' : first_bowl, 'second_bowl' : second_bowl, 'runs1' : runs1, 'runs2' : runs2, 'batsmen1' : batsmen1, 'batsmen2' : batsmen2, 'bowler1' : bowler1, 'bowler2' : bowler2, 'wickets1' : wickets1, 'wickets2' : wickets2,"teams" : resA['rows'][0], 'runs1_split' : resB1, 'runs2_split' : resB2, 'extra1' : resC1, 'extra2' : resC2});
+                                                                                                                                        }
+                                                                                                                                    })
+                                                                                                                                }
+                                                                                                                            })
+                                                                                                                        }
+                                                                                                                    })
+                                                                                                                }
+                                                                                                            })
+                                                                                                            
+                                                                                                        }
+                                                                                                    })
+                                                                                                    
                                                                                                 }
                                                                                             })
                                                                                         }
