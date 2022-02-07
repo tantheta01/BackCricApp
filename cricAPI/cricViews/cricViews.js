@@ -440,8 +440,8 @@ exports.points_table = function(req,res) {
 }
 
 exports.list_venues = function (req,res) {
-    var q = `select venue_name,venue_id from venue`;
-    client.query(q, (err,years) => {
+    var q = `select * from venue`;
+    client.query(q, (err,venues) => {
         if(err){
             console.log(JSON.stringify(err));
         }
@@ -504,7 +504,7 @@ exports.venue_stats = function (req,res) {
                                                                     console.log(JSON.stringify(err8));
                                                                 }
                                                                 else{
-                                                                    res.json({'details' : res1, 'matches' : res2, 'minmax' : res3, 'highest_chase' : res4, 'first_bat' : res5, 'first_bowl' : res6, 'draw' : res7, 'average_score' : res8});
+                                                                    res.json({'details' : res1['rows'], 'matches' : res2['rows'], 'minmax' : res3['rows'], 'highest_chase' : res4['rows'], 'first_bat' : res5['rows'], 'first_bowl' : res6['rows'], 'draw' : res7['rows'], 'average_score' : res8['rows']});
                                                                 }
                                                             });
                                                         }
