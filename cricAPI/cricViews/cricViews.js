@@ -64,6 +64,13 @@ exports.match_desc = function(req, res) {
     var qC1 = `select sum(extra_runs) as sum_ex from ball_by_ball where match_id = ${match_id} and innings_no=1`;
     var qC2 = `select sum(extra_runs) as sum_ex from ball_by_ball where match_id = ${match_id} and innings_no=2`;
 
+    var toss_winner = `select team_name from match join team on match.toss_winner = team.team_id where match_id = ${match_id}`;
+    var venue_name = `select venue_name from match join venue on match.venue_id = venue.venue_id where match_id = ${match_id}`;
+    var umpire_name = `select umpire_name from umpire join umpire_match on umpire.umpire_id = umpire_match.umpire_id where match_id = ${match_id}`;
+    var team1_11 = `select player_name from player join player_match on player.player_id = player_match.player_id join match on match.team1 = player_match.team_id where match.match_id = player_match.match_id and match.match_id = ${match_id}`;
+    var team2_11 = `select player_name from player join player_match on player.player_id = player_match.player_id join match on match.team2 = player_match.team_id where match.match_id = player_match.match_id and match.match_id = ${match_id}`;
+
+
     //match summary
     //have to add number of overs also in match summary
     //var q7 = `select * from (select sum(runs_scored) as runs, striker as player_id, count(*) as num_balls from ball_by_ball where match_id = ${match_id} and innings_no=1 group by  striker) as db1 order by db1.runs desc, db1.num_balls asc, db1.player_id asc limit 3`;
@@ -154,7 +161,28 @@ exports.match_desc = function(req, res) {
                                                                                                                                 if(resC1){
                                                                                                                                     client.query(qC2, (errC2, resC2) => {
                                                                                                                                         if(resC2){
-                                                                                                                                            res.json({'first_bat' : first_bat, 'second_bat' : second_bat, 'first_bowl' : first_bowl, 'second_bowl' : second_bowl, 'runs1' : runs1, 'runs2' : runs2, 'batsmen1' : batsmen1, 'batsmen2' : batsmen2, 'bowler1' : bowler1, 'bowler2' : bowler2, 'wickets1' : wickets1, 'wickets2' : wickets2,"teams" : resA['rows'][0], 'runs1_split' : resB1, 'runs2_split' : resB2, 'extra1' : resC1, 'extra2' : resC2});
+                                                                                                                                            
+                                                                                                                                            client.query(toss_winner, (errtoss, restoss) => {
+                                                                                                                                                if(restoss){
+                                                                                                                                                    client.query(venue_name, (errvenue, resvenue) => {
+                                                                                                                                                        if(resvenue){
+                                                                                                                                                            client.query(umpire_name, (err_umpire, resumpire) => {
+                                                                                                                                                                if(resumpire){
+                                                                                                                                                                    client.query(team1_11, (err_1_11, res_1_11) => {
+                                                                                                                                                                        if(res_1_11){
+                                                                                                                                                                            client.query(team2_11, (err_2_11, res_2_11) => {
+                                                                                                                                                                                if(res_2_11){
+                                                                                                                                                                                    res.json({'first_bat' : first_bat, 'second_bat' : second_bat, 'first_bowl' : first_bowl, 'second_bowl' : second_bowl, 'runs1' : runs1, 'runs2' : runs2, 'batsmen1' : batsmen1, 'batsmen2' : batsmen2, 'bowler1' : bowler1, 'bowler2' : bowler2, 'wickets1' : wickets1, 'wickets2' : wickets2,"teams" : resA['rows'][0], 'runs1_split' : resB1, 'runs2_split' : resB2, 'extra1' : resC1, 'extra2' : resC2, 'toss_win' : restoss, 'umpire' : resumpire, 'venue' : resvenue, 'playing_eleven_1' : res_1_11, 'playing_eleven_2' : res_2_11});
+                                                                                                                                                                                }
+                                                                                                                                                                            })
+                                                                                                                                                                        }
+                                                                                                                                                                    })
+                                                                                                                                                                }
+                                                                                                                                                            })
+                                                                                                                                                        }
+                                                                                                                                                    })
+                                                                                                                                                }
+                                                                                                                                            })
                                                                                                                                         }
                                                                                                                                     })
                                                                                                                                 }
