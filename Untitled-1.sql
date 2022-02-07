@@ -119,3 +119,19 @@ select team1, team2, team1_name, team_name as team2_name from (select team1, tea
 select runs_scored, count(*) * runs_scored as tot_runs from ball_by_ball where match_id = 501208 and innings_no = 1 group by runs_scored;
 
 select sum(extra_runs) as sum_ex from ball_by_ball where match_id = ${match_id} and innings_no=1
+
+
+select team_name, teamid, trr, nmatches, totwins, totloss, points from team inner join
+
+(select teamid, trr, nmatches, totwins, totloss, 2*totwins as points from 
+
+(select db1.team_id as teamid, round(prr - nrr, 3) as trr from (select player_match.team_id, sum(runs_scored) + sum(extra_runs) as runs, count(*) as nballs, (6.0*(sum(runs_scored) + sum(extra_runs)))/count(*) as prr from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id inner join player_match on match.match_id = player_match.match_id and ball_by_ball.striker = player_match.player_id where match.season_year = ${season_year} group by player_match.team_id) as db1 inner join  (select player_match.team_id, sum(runs_scored) + sum(extra_runs) as runs, count(*) as nballs, (6.0*(sum(runs_scored) + sum(extra_runs)))/count(*) as nrr from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id inner join player_match on match.match_id = player_match.match_id and ball_by_ball.bowler = player_match.player_id where match.season_year = ${season_year} group by player_match.team_id) as db2 on db1.team_id = db2.team_id) as dbRR
+inner join
+(select db1.team1 as team1, w1+w2 as nmatches, db1.nwins + db2.nwins as totwins, db1.nloss+db2.nloss as totloss from (select team1, count(*) as w1, sum(case when team1=match_winner then 1 else 0 end) as nwins, sum(case when team1!=match_winner then 1 else 0 end) as nloss from match where match.season_year = ${season_year} group by team1) as db1 inner join (select team2, count(*) as w2, sum(case when team2=match_winner then 1 else 0 end) as nwins, sum(case when team2!=match_winner then 1 else 0 end) as nloss from match where match.season_year = ${season_year} group by team2) as db2 on team1 = team2) as dbMatches
+on teamid = team1) as fulldb on team_id = teamid;
+
+
+select db1.team1 as team1, w1+w2 as w from (select team1, 2*count(*) as w1 from match where match.season_year = ${season_year} group by team1) as db1 inner join (select team2, 2*count(*) as w2 from match where match.season_year = ${season_year} group by team2) as db2 on team1 = team2;
+
+
+

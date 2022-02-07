@@ -70,6 +70,7 @@ exports.match_desc = function(req, res) {
     var team1_11 = `select player_name from player join player_match on player.player_id = player_match.player_id join match on match.team1 = player_match.team_id where match.match_id = player_match.match_id and match.match_id = ${match_id}`;
     var team2_11 = `select player_name from player join player_match on player.player_id = player_match.player_id join match on match.team2 = player_match.team_id where match.match_id = player_match.match_id and match.match_id = ${match_id}`;
 
+    
 
     //match summary
     //have to add number of overs also in match summary
@@ -489,6 +490,7 @@ exports.player_info = function(req,res) {
 }
 
 exports.list_years = function(req,res) {
+    
     var q = `select distinct season_year from match`;
     client.query(q, (err,years) => {
         if(err){
@@ -501,6 +503,25 @@ exports.list_years = function(req,res) {
 }
 
 exports.points_table = function(req,res) {
+    var season_year = req.params.year;
+    var q = `select team_name, teamid, trr, nmatches, totwins, totloss, points from team inner join
+
+    (select teamid, trr, nmatches, totwins, totloss, 2*totwins as points from 
+    
+    (select db1.team_id as teamid, round(prr - nrr, 3) as trr from (select player_match.team_id, sum(runs_scored) + sum(extra_runs) as runs, count(*) as nballs, (6.0*(sum(runs_scored) + sum(extra_runs)))/count(*) as prr from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id inner join player_match on match.match_id = player_match.match_id and ball_by_ball.striker = player_match.player_id where match.season_year = ${season_year} group by player_match.team_id) as db1 inner join  (select player_match.team_id, sum(runs_scored) + sum(extra_runs) as runs, count(*) as nballs, (6.0*(sum(runs_scored) + sum(extra_runs)))/count(*) as nrr from ball_by_ball inner join match on match.match_id = ball_by_ball.match_id inner join player_match on match.match_id = player_match.match_id and ball_by_ball.bowler = player_match.player_id where match.season_year = ${season_year} group by player_match.team_id) as db2 on db1.team_id = db2.team_id) as dbRR
+    inner join
+    (select db1.team1 as team1, w1+w2 as nmatches, db1.nwins + db2.nwins as totwins, db1.nloss+db2.nloss as totloss from (select team1, count(*) as w1, sum(case when team1=match_winner then 1 else 0 end) as nwins, sum(case when team1!=match_winner then 1 else 0 end) as nloss from match where match.season_year = ${season_year} group by team1) as db1 inner join (select team2, count(*) as w2, sum(case when team2=match_winner then 1 else 0 end) as nwins, sum(case when team2!=match_winner then 1 else 0 end) as nloss from match where match.season_year = ${season_year} group by team2) as db2 on team1 = team2) as dbMatches
+    on teamid = team1) as fulldb on team_id = teamid order by points desc, trr desc;
+    `;
+    client.query(q, (err, resp) => {
+        if(err){
+            console.log(JSON.stringify(err));
+        }
+        else{
+            res.json({'points_table' : resp['rows']});
+        }
+    })
+
     //do here
 }
 
