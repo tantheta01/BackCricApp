@@ -299,7 +299,7 @@ exports.match_desc = function(req, res) {
 exports.list_players = function(req,res) {
     var limit = req.query.limit;
     var skip = req.query.skip;
-    var q = `select * from (select row_number() over() as rn, player_id, player_name, country_name from player) as db1 where rn>=${skip} and rn<=${limit}`;
+    var q = `select * from (select row_number() over() as rn, player_id, player_name, country_name from player) as db1 where rn>${skip} and rn<=${limit}`;
     client.query(q, (err,players) => {
         if(err){
             console.log(JSON.stringify(err));
